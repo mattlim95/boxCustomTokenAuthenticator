@@ -44,8 +44,6 @@ var (
 	}
 )
 
-var boxAppSettings boxconfig.BoxAppSettings
-
 // Box Auth Response
 type TokenDetails struct {
 	AccessToken     string `json:"access_token"`
