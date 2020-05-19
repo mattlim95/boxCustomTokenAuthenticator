@@ -23,7 +23,7 @@ type BoxAppSettings struct {
 	EnterpriseID string `json:"enterpriseID"`
 }
 
-func readJSON(location string) (boxAppSettings *BoxAppSettings, err error) {
+func ReadJSON(location string) (boxAppSettings *BoxAppSettings, err error) {
 	// Fetch Json file
 	jsonFile, err := os.Open(location)
 	if err != nil {
@@ -41,7 +41,7 @@ func readJSON(location string) (boxAppSettings *BoxAppSettings, err error) {
 
 // Generate Random modules need to find a new home, putting in boxconfig for now
 //Used for generating random ID
-func GenerateRandomBytes(n int) ([]byte, error) {
+func generateRandomBytes(n int) ([]byte, error) {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
 	// Note that err == nil only if we read len(b) bytes.
@@ -54,6 +54,6 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 
 //Used for generating random ID
 func GenerateRandomString(s int) (string, error) {
-	b, err := GenerateRandomBytes(s)
+	b, err := generateRandomBytes(s)
 	return base64.URLEncoding.EncodeToString(b), err
 }

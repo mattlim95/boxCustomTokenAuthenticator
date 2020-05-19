@@ -1,6 +1,7 @@
 package jws
 
 import (
+	"boxCustomTokenAuthenticator/boxconfig"
 	"bytes"
 	"crypto/rsa"
 	"encoding/json"
@@ -43,6 +44,8 @@ var (
 	}
 )
 
+var boxAppSettings boxconfig.BoxAppSettings
+
 // Box Auth Response
 type TokenDetails struct {
 	AccessToken     string `json:"access_token"`
@@ -62,7 +65,7 @@ type TokenDetails struct {
 	TokenType string `json:"token_type"`
 }
 
-func decryptPrivateKey(boxAppSettings *BoxAppSettings) (key *rsa.PrivateKey, err error) {
+func decryptPrivateKey(boxAppSettings *boxconfig.BoxAppSettings) (key *rsa.PrivateKey, err error) {
 
 	// Learn how this works
 
@@ -79,8 +82,8 @@ func decryptPrivateKey(boxAppSettings *BoxAppSettings) (key *rsa.PrivateKey, err
 	return rsaKey.(*rsa.PrivateKey), nil
 }
 
-func createJWTClaims(boxAppSettings *BoxAppSettings, boxSubType string) (claims *jws.ClaimSet, err error) {
-	val, err := GenerateRandomString(32)
+func createJWTClaims(boxAppSettings *boxconfig.BoxAppSettings, boxSubType string) (claims *jws.ClaimSet, err error) {
+	val, err := boxconfig.GenerateRandomString(32)
 
 	claims = &jws.ClaimSet{
 		Iss: boxAppSettings.BoxAppSettings.ClientID,
@@ -101,7 +104,7 @@ func createJWTClaims(boxAppSettings *BoxAppSettings, boxSubType string) (claims 
 	return claims, nil
 }
 
-func createHeader(boxAppSettings *BoxAppSettings) *jws.Header {
+func createHeader(boxAppSettings *boxconfig.BoxAppSettings) *jws.Header {
 
 	signingHeaders := &jws.Header{
 		Algorithm: "RS256",
@@ -112,7 +115,7 @@ func createHeader(boxAppSettings *BoxAppSettings) *jws.Header {
 	return signingHeaders
 }
 
-func createQueryParams(boxAppSettings *BoxAppSettings) map[string]string {
+func createQueryParams(boxAppSettings *boxconfig.BoxAppSettings) map[string]string {
 	queryParams := map[string]string{
 		"client_id":     boxAppSettings.BoxAppSettings.ClientID,
 		"client_secret": boxAppSettings.BoxAppSettings.ClientSecret,
@@ -188,8 +191,8 @@ func requestToken(claims *jws.ClaimSet, signingHeaders *jws.Header, queryParams 
 
 }
 
-func BoxClient() {
-	boxAppSettings, err := readJSON("config.json")
+func BoxClient(location string) {
+	boxAppSettings, err := boxconfig.ReadJSON(location)
 	if err != nil {
 		log.Fatalf("Step 1: Failed to configure token: %v", err)
 	}
