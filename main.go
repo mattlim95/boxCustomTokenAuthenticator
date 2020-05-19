@@ -115,9 +115,9 @@ func main() {
 
 }
 
-func readJSON() (boxAppSettings *BoxAppSettings, err error) {
+func readJSON(location string) (boxAppSettings *BoxAppSettings, err error) {
 	// Fetch Json file
-	jsonFile, err := os.Open("config.json")
+	jsonFile, err := os.Open(location)
 	if err != nil {
 		fmt.Println(err)
 	}
