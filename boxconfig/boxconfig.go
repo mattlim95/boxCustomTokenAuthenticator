@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-// Box Config
+// Box Config file
 type BoxAppSettings struct {
 	BoxAppSettings struct {
 		ClientID     string `json:"clientID"`
@@ -21,6 +21,25 @@ type BoxAppSettings struct {
 		} `json:"appAuth"`
 	} `json:"boxAppSettings"`
 	EnterpriseID string `json:"enterpriseID"`
+}
+
+// Box Authentication Response
+type TokenDetails struct {
+	AccessToken     string `json:"access_token"`
+	ExpiresIn       int    `json:"expires_in"`
+	IssuedTokenType string `json:"issued_token_type"`
+	RefreshToken    string `json:"refresh_token"`
+	RestrictedTo    []struct {
+		Scope  string `json:"scope"`
+		Object struct {
+			ID         int    `json:"id"`
+			Etag       int    `json:"etag"`
+			Type       string `json:"type"`
+			SequenceID int    `json:"sequence_id"`
+			Name       string `json:"name"`
+		} `json:"object"`
+	} `json:"restricted_to"`
+	TokenType string `json:"token_type"`
 }
 
 func ReadJSON(location string) (boxAppSettings *BoxAppSettings, err error) {

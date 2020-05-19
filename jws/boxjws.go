@@ -44,25 +44,6 @@ var (
 	}
 )
 
-// Box Auth Response
-type TokenDetails struct {
-	AccessToken     string `json:"access_token"`
-	ExpiresIn       int    `json:"expires_in"`
-	IssuedTokenType string `json:"issued_token_type"`
-	RefreshToken    string `json:"refresh_token"`
-	RestrictedTo    []struct {
-		Scope  string `json:"scope"`
-		Object struct {
-			ID         int    `json:"id"`
-			Etag       int    `json:"etag"`
-			Type       string `json:"type"`
-			SequenceID int    `json:"sequence_id"`
-			Name       string `json:"name"`
-		} `json:"object"`
-	} `json:"restricted_to"`
-	TokenType string `json:"token_type"`
-}
-
 func decryptPrivateKey(boxAppSettings *boxconfig.BoxAppSettings) (key *rsa.PrivateKey, err error) {
 
 	// Learn how this works
@@ -165,7 +146,7 @@ func requestToken(claims *jws.ClaimSet, signingHeaders *jws.Header, queryParams 
 		}
 	}()
 
-	result := &TokenDetails{}
+	result := &boxconfig.TokenDetails{}
 	err = json.NewDecoder(strings.NewReader(bodyString)).Decode(result)
 	if result.AccessToken == "" && err == nil {
 		err = errors.New("No AccessToken in Response")
