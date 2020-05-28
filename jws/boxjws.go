@@ -103,14 +103,14 @@ func createQueryParams(boxAppSettings *boxconfig.BoxAppSettings) map[string]stri
 	return queryParams
 }
 
-func requestToken(claims *jws.ClaimSet, signingHeaders *jws.Header, queryParams map[string]string, privateKey *rsa.PrivateKey, client *http.Client) (err error) {
+func requestToken(claims *jws.ClaimSet, signingHeaders *jws.Header, queryParams map[string]string, privateKey *rsa.PrivateKey, client *http.Client) (token *oauth2.Token, err error) {
 	payload, err := jws.Encode(signingHeaders, claims, privateKey)
 	if err != nil {
-		return errors.Wrap(err, "Failed to encode payload")
+		return nil, errors.Wrap(err, "Failed to encode payload")
 	}
 	req, err := http.NewRequest("POST", claims.Aud, nil)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create new request")
+		return nil, errors.Wrap(err, "Failed to create new request")
 	}
 	q := req.URL.Query()
 	q.Add("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer")
@@ -122,13 +122,13 @@ func requestToken(claims *jws.ClaimSet, signingHeaders *jws.Header, queryParams 
 
 	req, err = http.NewRequest("POST", claims.Aud, bytes.NewBuffer([]byte(queryString)))
 	if err != nil {
-		return errors.Wrap(err, "Failed to create new request")
+		return nil, errors.Wrap(err, "Failed to create new request")
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Wrap(err, "Failed making auth request")
+		return nil, errors.Wrap(err, "Failed making auth request")
 	}
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
@@ -137,7 +137,7 @@ func requestToken(claims *jws.ClaimSet, signingHeaders *jws.Header, queryParams 
 
 	if resp.StatusCode != 200 {
 		err = errors.New(resp.Status)
-		return errors.Wrap(err, "Failed making auth request")
+		return nil, errors.Wrap(err, "Failed making auth request")
 	}
 	defer func() {
 		deferedErr := resp.Body.Close()
@@ -152,10 +152,10 @@ func requestToken(claims *jws.ClaimSet, signingHeaders *jws.Header, queryParams 
 		err = errors.New("No AccessToken in Response")
 	}
 	if err != nil {
-		return errors.Wrap(err, "Failed to get token")
+		return nil, errors.Wrap(err, "Failed to get token")
 	}
 
-	token := &oauth2.Token{
+	token = &oauth2.Token{
 		AccessToken:  result.AccessToken,
 		TokenType:    result.TokenType,
 		RefreshToken: result.RefreshToken,
@@ -166,31 +166,64 @@ func requestToken(claims *jws.ClaimSet, signingHeaders *jws.Header, queryParams 
 		token.Expiry = time.Now().Add(time.Duration(expiry) * time.Second)
 	}
 
-	return err
+	return token, err
 
 }
 
-func BoxClient(location string) {
+func BoxClient(location string) (*http.Client, error) {
 	boxAppSettings, err := boxconfig.ReadJSON(location)
 	if err != nil {
-		log.Fatalf("Step 1: Failed to configure token: %v", err)
+		// log.Fatalf("Step 1: Failed to configure token: %v", err)
+		return nil, fmt.Errorf("step 1: failed to configure token: %v", err)
 	}
 	privateKey, err := decryptPrivateKey(boxAppSettings)
 	if err != nil {
-		log.Fatalf("Step 2 : Failed to configure token: %v", err)
+		// log.Fatalf("Step 2 : Failed to configure token: %v", err)
+		return nil, fmt.Errorf("step 2 : failed to configure token: %v", err)
 	}
 	claims, err := createJWTClaims(boxAppSettings, boxType)
 	if err != nil {
-		log.Fatalf("Step 3 : Failed to configure token: %v", err)
+		// log.Fatalf("Step 3 : Failed to configure token: %v", err)
+		return nil, fmt.Errorf("step 3 : failed to configure token: %v", err)
 	}
 	signingHeaders := createHeader(boxAppSettings)
 	queryParams := createQueryParams(boxAppSettings)
 	client := &http.Client{}
 
-	err = requestToken(claims, signingHeaders, queryParams, privateKey, client)
+	tok, err := requestToken(claims, signingHeaders, queryParams, privateKey, client)
+	_ = tok
 	if err != nil {
 		log.Fatalf("Step 4 : Failed to configure token: %v", err)
+		return nil, fmt.Errorf("step 4 : failed to configure token: %v", err)
 	} else {
 		fmt.Println("Box connection up")
 	}
+
+	return client, nil
+}
+
+func BetterBoxClient(location string) (*http.Client, error) {
+	// Copied from BoxClient
+	boxAppSettings, err := boxconfig.ReadJSON(location)
+	if err != nil {
+		// log.Fatalf("Step 1: Failed to configure token: %v", err)
+		return nil, fmt.Errorf("step 1: failed to configure token: %v", err)
+	}
+	privateKey, err := decryptPrivateKey(boxAppSettings)
+	if err != nil {
+		// log.Fatalf("Step 2 : Failed to configure token: %v", err)
+		return nil, fmt.Errorf("step 2 : failed to configure token: %v", err)
+	}
+	claims, err := createJWTClaims(boxAppSettings, boxType)
+	if err != nil {
+		// log.Fatalf("Step 3 : Failed to configure token: %v", err)
+		return nil, fmt.Errorf("step 3 : failed to configure token: %v", err)
+	}
+	signingHeaders := createHeader(boxAppSettings)
+	queryParams := createQueryParams(boxAppSettings)
+	client := &http.Client{}
+
+	tok, err := requestToken(claims, signingHeaders, queryParams, privateKey, client)
+	_ = tok
+	return client, err
 }
